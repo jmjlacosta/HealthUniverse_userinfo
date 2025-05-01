@@ -1,9 +1,10 @@
-from typing import Optional, Annotated
-from fastapi import FastAPI, Form, Request, Depends
+from typing import Optional
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+# Pydantic models
 class Input(BaseModel):
     session_id: Optional[str] = None
     user_role: Optional[str] = None
@@ -18,41 +19,23 @@ class Output(BaseModel):
     cookies: dict
     form_input: Input
 
-
+# FastAPI app
 app = FastAPI(
-    title="User Info Extraction",
-    description="Returns information about the incoming request and any form input provided.",
+    title="Whoami Tool",
+    description="Returns information about the incoming request and any JSON input provided.",
     version="1.0.0",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- Form Parser ---
-
-def as_form(
-    session_id: Annotated[Optional[str], Form()] = None,
-    user_role: Annotated[Optional[str], Form()] = None,
-    user_agent_override: Annotated[Optional[str], Form()] = None,
-) -> Input:
-    return Input(
-        session_id=session_id,
-        user_role=user_role,
-        user_agent_override=user_agent_override,
-    )
-
-# --- Endpoints ---
-
 @app.post("/call/", response_model=Output)
-async def call(
-    request: Request,
-    data: Annotated[Input, Depends(as_form)],
-) -> Output:
+async def call(request: Request, data: Input) -> Output:
     return Output(
         client_ip=request.client.host,
         method=request.method,
